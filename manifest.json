@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Auto Cookie Rejector",
+  "version": "1.0",
+
+  "permissions": [
+    "scripting",
+    "activeTab",
+    "webNavigation"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "background": {
+    "service_worker": "sw.js"
+  }
+}

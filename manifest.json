@@ -2,18 +2,28 @@
   "manifest_version": 3,
   "name": "Auto Cookie Rejector",
   "version": "1.0",
+  "description": "Automatically rejects cookie consent banners when possible.",
 
   "permissions": [
-    "scripting",
     "activeTab",
+    "scripting",
+    "tabs",
     "webNavigation"
   ],
+
+  "background": {
+    "service_worker": "sw.js"
+  },
 
   "host_permissions": [
     "<all_urls>"
   ],
 
-  "background": {
-    "service_worker": "sw.js"
-  }
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

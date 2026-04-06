@@ -24,7 +24,7 @@ In the current version, the extension prioritizes safer behavior:
 
 For setup, updating, and testing instructions, see:
 
-[INSTALL.md](/Users/alyssakoooo/barnard/comp%20sci%20major/Usable%20S&P/auto-cookie-rejector/INSTALL.md)
+[INSTALL.md](https://github.com/alyssarrko/usp26_auto_cookie_rejector/blob/main/INSTALL.md)
 
 ## Current Known Limitations
 

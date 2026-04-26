@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto Cookie Rejector — A friendlier way to handle cookie banners</title>
+  <meta name="description" content="A Chrome extension that automatically rejects non-essential cookies when possible, and safely opens the privacy settings when it can't." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%AA%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #faf7f2;
+      --surface: #ffffff;
+      --text: #1f1d2b;
+      --muted: #5a5870;
+      --border: #ece7df;
+      --primary: #4f3ad6;
+      --primary-soft: #ece9ff;
+      --accent: #d6543a;
+      --accent-soft: #ffece7;
+      --success: #2f8a5b;
+      --success-soft: #e6f5ec;
+      --shadow: 0 1px 2px rgba(31, 29, 43, 0.04), 0 8px 24px rgba(31, 29, 43, 0.06);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container {
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* NAV */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(250, 247, 242, 0.9);
+      backdrop-filter: saturate(140%) blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .brand .logo {
+      width: 32px; height: 32px;
+      border-radius: 9px;
+      background: var(--primary-soft);
+      display: grid; place-items: center;
+      font-size: 18px;
+    }
+    .nav-links { display: flex; gap: 22px; }
+    .nav-links a {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    @media (max-width: 640px) { .nav-links { display: none; } }
+
+    /* HERO */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 22px;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 5.6vw, 56px);
+      line-height: 1.1;
+      margin: 0 0 20px;
+      letter-spacing: -0.02em;
+      font-weight: 800;
+    }
+    .hero h1 .accent {
+      background: linear-gradient(120deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero p.lead {
+      font-size: 19px;
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto 32px;
+    }
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 15px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform 0.05s ease, background 0.15s ease, border 0.15s ease;
+    }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover { background: #3f2dbe; }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover { border-color: #d3cdc1; }
+
+    /* DEMO BOX (cookie banner mock) */
+    .demo {
+      margin: 48px auto 0;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      text-align: left;
+    }
+    .demo-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .demo-sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+    .demo-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .fake-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #f4f0e8;
+      color: var(--text);
+      position: relative;
+    }
+    .fake-btn.accept { background: #1f1d2b; color: white; border-color: #1f1d2b; }
+    .fake-btn.reject {
+      background: var(--accent-soft);
+      border-color: #f4cabe;
+      color: var(--accent);
+    }
+    .fake-btn.reject::after {
+      content: "auto-clicked";
+      position: absolute;
+      top: -10px; right: -10px;
+      background: var(--success);
+      color: white;
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      animation: pop 1.6s ease-out infinite;
+    }
+    @keyframes pop {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(1.08); }
+    }
+
+    /* SECTIONS */
+    section { padding: 64px 0; }
+    .section-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin: 0 0 8px;
+    }
+    .section-sub {
+      color: var(--muted);
+      margin: 0 0 32px;
+      max-width: 620px;
+    }
+
+    /* FEATURE GRID */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+    .card .icon {
+      width: 38px; height: 38px;
+      display: grid; place-items: center;
+      border-radius: 10px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+    .card h3 { margin: 0 0 6px; font-size: 17px; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+    /* HOW IT WORKS */
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 860px) { .flow { grid-template-columns: 1fr; } }
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      position: relative;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: grid; place-items: center;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .step h3 { margin: 0 0 6px; font-size: 17px; }
+    .step p { margin: 0; color: var(--muted); font-size: 15px; }
+    .step.success .step-num { background: var(--success); }
+    .step.warn .step-num { background: var(--accent); }
+
+    /* INSTALL */
+    .install {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+    .install ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+    .install ol li { margin-bottom: 10px; color: var(--muted); }
+    .install ol li strong { color: var(--text); }
+    code, .code {
+      font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+      background: #f1ede4;
+      color: #312e44;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    /* LIMITATIONS */
+    .limits {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 720px) { .limits { grid-template-columns: 1fr; } }
+    .limit {
+      background: var(--accent-soft);
+      border: 1px solid #f4cabe;
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .limit h4 { margin: 0 0 6px; color: var(--accent); font-size: 15px; }
+    .limit p { margin: 0; color: #6b3a2c; font-size: 14px; }
+
+    /* PRIVACY HIGHLIGHT */
+    .privacy {
+      background: var(--success-soft);
+      border: 1px solid #c6e4d2;
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .privacy .badge {
+      flex: 0 0 auto;
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--success);
+      color: white;
+      display: grid; place-items: center;
+      font-size: 18px;
+    }
+    .privacy h3 { margin: 0 0 6px; }
+    .privacy p { margin: 0; color: #28503a; }
+
+    /* FAQ */
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+    details summary {
+      cursor: pointer;
+      font-weight: 600;
+      list-style: none;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::after {
+      content: "+";
+      float: right;
+      color: var(--muted);
+      font-weight: 700;
+      transition: transform 0.2s ease;
+    }
+    details[open] summary::after { content: "−"; }
+    details p {
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0 48px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+    }
+    footer a { color: var(--muted); }
+    footer .heart { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <span class="logo" aria-hidden="true">🍪</span>
+        <span>Auto Cookie Rejector</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#install">Install</a>
+        <a href="#limits">Honesty</a>
+        <a href="https://github.com/alyssarrko/usp26_auto_cookie_rejector" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="container">
+      <span class="pill">Chrome Extension · Manifest V3</span>
+      <h1>Stop clicking <span class="accent">"Accept All"</span> just to make the banner go away.</h1>
+      <p class="lead">
+        Auto Cookie Rejector is a small Chrome extension that tries to reject non-essential cookies for you — and when it can't, it safely opens the privacy settings instead of guessing.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/alyssarrko/usp26_auto_cookie_rejector" target="_blank" rel="noopener">
+          View on GitHub →
+        </a>
+        <a class="btn btn-secondary" href="#install">How to install</a>
+      </div>
+
+      <!-- mini demo -->
+      <div class="demo" aria-hidden="true">
+        <div class="demo-title">🍪 We use cookies</div>
+        <div class="demo-sub">This site uses cookies to enhance your experience and personalize content.</div>
+        <div class="demo-buttons">
+          <span class="fake-btn accept">Accept All</span>
+          <span class="fake-btn reject">Reject All</span>
+          <span class="fake-btn">Manage Preferences</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="container">
+      <h2 class="section-title">What it does</h2>
+      <p class="section-sub">Built as a class project for Usable Security &amp; Privacy. Designed to be simple, transparent, and safe by default.</p>
+
+      <div class="grid">
+        <div class="card">
+          <div class="icon">⚡</div>
+          <h3>Auto-rejects when it's clear</h3>
+          <p>Looks for obvious top-level options like "Reject", "Reject All", "Decline", or "Deny" and clicks them for you.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🛡️</div>
+          <h3>Safe fallback</h3>
+          <p>If there's no direct reject option, it opens the privacy or cookie settings panel and stops — so you stay in control.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔍</div>
+          <h3>Watches the page</h3>
+          <p>Some banners load late. The extension keeps watching for a short window so it can act once the banner finally appears.</p>
+        </div>
+        <div class="card">
+          <div class="icon">💻</div>
+          <h3>Runs locally</h3>
+          <p>No backend, no account, no analytics. Everything runs inside your browser.</p>
+        </div>
+        <div class="card">
+          <div class="icon">📦</div>
+          <h3>Manifest V3</h3>
+          <p>Built on Chrome's current extension platform with a small, focused permission set.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🧪</div>
+          <h3>Easy to inspect</h3>
+          <p>Exposes a debug attribute on the page so you can see what it did: <code>rejected</code>, <code>opened-manual-choice</code>, or <code>manual-choice</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" style="background: #f3eee4;">
+    <div class="container">
+      <h2 class="section-title">How it works</h2>
+      <p class="section-sub">A simple decision flow that prioritizes safety over speed.</p>
+
+      <div class="flow">
+        <div class="step success">
+          <div class="step-num">1</div>
+          <h3>Look for a clear "Reject"</h3>
+          <p>Scans buttons and links for keywords like <em>reject</em>, <em>decline</em>, <em>deny</em>, or <em>only necessary</em>. If it finds one, it clicks it.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Otherwise, open settings</h3>
+          <p>If there's no direct reject button, it looks for "Manage Cookies", "Privacy Choices", "Customize", and similar entries and opens that panel.</p>
+        </div>
+        <div class="step warn">
+          <div class="step-num">3</div>
+          <h3>Hand it back to you</h3>
+          <p>Inside complex second-layer modals, the extension stops and lets the user make the final choice. No risky guessing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section id="install">
+    <div class="container">
+      <h2 class="section-title">Install in under a minute</h2>
+      <p class="section-sub">The extension is unpacked / developer-mode for now since it's a class project.</p>
+
+      <div class="install">
+        <ol>
+          <li>Open the GitHub repo and click <strong>Code → Download ZIP</strong>, then unzip it. Or <code>git clone</code> it.</li>
+          <li>In Chrome, visit <code>chrome://extensions</code>.</li>
+          <li>Turn on <strong>Developer mode</strong> in the top-right corner.</li>
+          <li>Click <strong>Load unpacked</strong> and select the folder containing <code>manifest.json</code>.</li>
+          <li>Open the extension's details and set <strong>Site access</strong> to <em>On all sites</em>.</li>
+          <li>Visit any site with a cookie banner and watch it go.</li>
+        </ol>
+      </div>
+
+      <p style="margin-top: 18px; color: var(--muted); font-size: 14px;">
+        Full instructions, including how to update and debug, are in
+        <a href="https://github.com/alyssarrko/usp26_auto_cookie_rejector/blob/main/INSTALL.md" target="_blank" rel="noopener">INSTALL.md</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- LIMITATIONS / HONEST -->
+  <section id="limits" style="background: #f3eee4;">
+    <div class="container">
+      <h2 class="section-title">Where it falls short (we're being honest)</h2>
+      <p class="section-sub">A class project, not a polished product. These are the things we know don't work yet.</p>
+
+      <div class="limits">
+        <div class="limit">
+          <h4>Custom HTML &amp; vendor SDKs</h4>
+          <p>Many cookie banners are built with shadow DOM, iframes, or vendor SDKs that hide the buttons from a simple text scan.</p>
+        </div>
+        <div class="limit">
+          <h4>Second-layer modals</h4>
+          <p>Once the privacy panel is open, the extension does not auto-toggle off optional cookies or submit the form for you.</p>
+        </div>
+        <div class="limit">
+          <h4>Non-English text</h4>
+          <p>Keyword matching is in English. Banners in other languages or with unusual wording will likely be missed.</p>
+        </div>
+        <div class="limit">
+          <h4>Sites change</h4>
+          <p>If a site updates its consent UI, behavior that worked yesterday might break today.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY -->
+  <section>
+    <div class="container">
+      <div class="privacy">
+        <div class="badge" aria-hidden="true">🔒</div>
+        <div>
+          <h3>Privacy: it stays on your machine</h3>
+          <p>The extension runs locally inside your browser. There is no remote server, no account system, and no telemetry. It only interacts with cookie banners on the page you're already visiting.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" style="background: #f3eee4;">
+    <div class="container">
+      <h2 class="section-title">Common questions</h2>
+      <p class="section-sub">A few things people ask when we demo this.</p>
+
+      <details>
+        <summary>Will this work on every website?</summary>
+        <p>No. Cookie banners are wildly inconsistent. The extension handles common patterns where a clear "Reject" or "Manage" button exists in plain HTML. Sites that hide their banner inside shadow DOM, iframes, or custom widgets may not work yet.</p>
+      </details>
+
+      <details>
+        <summary>Why doesn't it just click everything off in the settings panel?</summary>
+        <p>Because that's where things get risky. Second-layer settings differ from site to site, and a wrong click could accept cookies instead of rejecting them. We chose to stop at the panel and let the user finish.</p>
+      </details>
+
+      <details>
+        <summary>Is it safe to install?</summary>
+        <p>The code is open source on GitHub — you can read every file. It uses <code>activeTab</code>, <code>scripting</code>, <code>tabs</code>, and <code>webNavigation</code> permissions to detect and click banner buttons. It does not send data anywhere.</p>
+      </details>
+
+      <details>
+        <summary>How can I tell what the extension did on a page?</summary>
+        <p>Open DevTools and check <code>document.documentElement.dataset.autoCookieRejectorState</code>. Possible values are <code>rejected</code>, <code>opened-manual-choice</code>, and <code>manual-choice</code>.</p>
+      </details>
+
+      <details>
+        <summary>Is this on the Chrome Web Store?</summary>
+        <p>Not yet. It's a class project for Usable Security &amp; Privacy, installed via Chrome's Developer Mode for now.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <p>
+        Built for a Usable Security &amp; Privacy class project ·
+        <a href="https://github.com/alyssarrko/usp26_auto_cookie_rejector" target="_blank" rel="noopener">GitHub</a> ·
+        <a href="https://github.com/alyssarrko/usp26_auto_cookie_rejector/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+      </p>
+      <p style="margin-top: 6px;">Made with <span class="heart">♥</span> and a healthy distrust of cookie banners.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

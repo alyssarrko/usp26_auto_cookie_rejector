@@ -107,6 +107,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
+  // If the click message also contains a status like "success", update the badge now
+  if (message.status) {
+    updateBadge(tabId, message.status);
+  }
+
   const task = message.type === "run-main-world-action"
     ? runPrivacyActionInMainWorld(tabId, sender.frameId, message.action)
     : clickElementInMainWorld(tabId, sender.frameId, message.marker);
@@ -136,7 +141,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 
 // Function to update the icon badge
 function updateBadge(tabId, status) {
-  // Add this safety check
+  // Adding this safety check
   if (!chrome.action) {
     console.warn("[AutoReject] chrome.action is not available.");
     return;

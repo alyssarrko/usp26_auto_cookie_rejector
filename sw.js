@@ -151,11 +151,3 @@ function updateBadge(tabId, status) {
   }
 }
 
-// Listen for status messages from content.js
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "update-status") {
-    const tabId = sender.tab.id;
-    updateBadge(tabId, message.status);
-    sendResponse({ ok: true });
-  }
-});

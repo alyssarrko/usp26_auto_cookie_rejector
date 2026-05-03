@@ -97,21 +97,31 @@ async function runPrivacyActionInMainWorld(tabId, frameId, action) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  /*if (message?.type !== "click-in-main-world" && message?.type !== "run-main-world-action") {
+    return;
+  }*/
+
+  const tabId = sender.tab?.id;
+  if (typeof tabId !== "number") /*{
+    sendResponse({ ok: false });*/
+    return;
+  //}
+
+  //old - If the click message also contains a status like "success", update the badge now
+  //new - If it's just a status update, we can top here and reply
+  if (message.status) {
+    updateBadge(tabId, message.status);
+    if (message.type === "update-status") {
+      sendResponse({ ok: true });
+      return;
+    }
+  }
+
+  // 2. Only proceed below if the message is for a "Main World" click (Fixes Ikea)
   if (message?.type !== "click-in-main-world" && message?.type !== "run-main-world-action") {
     return;
   }
-
-  const tabId = sender.tab?.id;
-  if (typeof tabId !== "number") {
-    sendResponse({ ok: false });
-    return;
-  }
-
-  // If the click message also contains a status like "success", update the badge now
-  if (message.status) {
-    updateBadge(tabId, message.status);
-  }
-
+ 
   const task = message.type === "run-main-world-action"
     ? runPrivacyActionInMainWorld(tabId, sender.frameId, message.action)
     : clickElementInMainWorld(tabId, sender.frameId, message.marker);

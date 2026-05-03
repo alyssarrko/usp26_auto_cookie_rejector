@@ -140,6 +140,11 @@
         if (text.includes(keyword)) {
           if (mode === "click") {
             console.log("[AutoReject] Clicking:", text);
+
+            //Send signal before click() to avoid the race condition, ensuring the Service Worker
+            //receives the success status before the site's UI destroys the banner element.
+            chrome.runtime.sendMessage({ type: "update-status", status: "success" });
+            
             if (await clickElement(button)) {
               return true;
             }
@@ -163,11 +168,15 @@
   async function startWatching() {
     if (await clickMatchingButton(REJECT_TEXTS, "click")) {
       document.documentElement.dataset.autoCookieRejectorState = "rejected";
-      chrome.runtime.sendMessage({ type: "update-status", status: "success" });      
+      
+      //Commented out the below line because we now send this inside clickMatchingButton
+      //chrome.runtime.sendMessage({ type: "update-status", status: "success" }); 
+      
       return;
     }
 
     if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
+      //When we find a banner but can't auto-reject
       chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
       return;
     }

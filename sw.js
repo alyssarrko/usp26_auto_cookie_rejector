@@ -96,16 +96,16 @@ async function runPrivacyActionInMainWorld(tabId, frameId, action) {
   });
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  /*if (message?.type !== "click-in-main-world" && message?.type !== "run-main-world-action") {
+/*chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  (message?.type !== "click-in-main-world" && message?.type !== "run-main-world-action") {
     return;
-  }*/
+  }
 
   const tabId = sender.tab?.id;
-  if (typeof tabId !== "number") /*{
-    sendResponse({ ok: false });*/
+  if (typeof tabId !== "number") 
+    sendResponse({ ok: false });
     return;
-  //}
+  }*/
 
   //old - If the click message also contains a status like "success", update the badge now
   //new - If it's just a status update, we can top here and reply

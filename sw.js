@@ -120,20 +120,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; 
   }
 });
- 
-  const task = message.type === "run-main-world-action"
-    ? runPrivacyActionInMainWorld(tabId, sender.frameId, message.action)
-    : clickElementInMainWorld(tabId, sender.frameId, message.marker);
-
-  task
-    .then(() => sendResponse({ ok: true }))
-    .catch((error) => {
-      console.warn("[AutoReject][SW] Main world action failed:", error);
-      sendResponse({ ok: false, error: String(error) });
-    });
-
-  return true;
-});
 
 // Normal page load
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {

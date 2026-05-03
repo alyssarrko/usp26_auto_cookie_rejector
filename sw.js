@@ -133,3 +133,23 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
     injectContentScript(details.tabId, details.url);
   }
 });
+
+// Function to update the icon badge
+function updateBadge(tabId, status) {
+  if (status === "success") {
+    chrome.action.setBadgeText({ tabId, text: "OK" });
+    chrome.action.setBadgeBackgroundColor({ tabId, color: "#4CAF50" }); // Green
+  } else if (status === "fail") {
+    chrome.action.setBadgeText({ tabId, text: "!" });
+    chrome.action.setBadgeBackgroundColor({ tabId, color: "#F44336" }); // Red
+  }
+}
+
+// Listen for status messages from content.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "update-status") {
+    const tabId = sender.tab.id;
+    updateBadge(tabId, message.status);
+    sendResponse({ ok: true });
+  }
+});

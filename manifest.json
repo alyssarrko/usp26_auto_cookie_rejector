@@ -4,6 +4,8 @@
   "version": "1.0",
   "description": "Automatically rejects cookie consent banners when possible.",
 
+  "action": {},
+
   "permissions": [
     "activeTab",
     "scripting",

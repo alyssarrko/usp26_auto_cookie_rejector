@@ -78,8 +78,12 @@
     if (href.includes("Optanon.ToggleInfoDisplay")) {
       try {
         const response = await chrome.runtime.sendMessage({
-          type: "run-main-world-action",
-          action: "optanon-toggle-info-display"
+          type: "click-in-main-world",
+          marker,
+          status: "success" //Tells the SW to turn green while clicking
+          
+          //type: "run-main-world-action",
+          //action: "optanon-toggle-info-display"
         });
 
         return Boolean(response?.ok);
@@ -143,7 +147,7 @@
 
             //Send signal before click() to avoid the race condition, ensuring the Service Worker
             //receives the success status before the site's UI destroys the banner element.
-            chrome.runtime.sendMessage({ type: "update-status", status: "success" });
+            //chrome.runtime.sendMessage({ type: "update-status", status: "success" });
             
             if (await clickElement(button)) {
               return true;

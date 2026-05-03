@@ -74,6 +74,10 @@
   }
 
   async function clickElement(button) {
+
+    //Moved from below to the top of the function
+    const marker = `acr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    
     const href = button.getAttribute("href") || "";
     if (href.includes("Optanon.ToggleInfoDisplay")) {
       try {
@@ -92,8 +96,11 @@
         return false;
       }
     }
+    
 
-    const marker = `acr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    //Moved the below line to the top of the function
+    //const marker = `acr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    
     button.setAttribute("data-auto-cookie-rejector-click", marker);
 
     try {
@@ -147,7 +154,7 @@
 
             //Send signal before click() to avoid the race condition, ensuring the Service Worker
             //receives the success status before the site's UI destroys the banner element.
-            //chrome.runtime.sendMessage({ type: "update-status", status: "success" });
+            chrome.runtime.sendMessage({ type: "update-status", status: "success" });
             
             if (await clickElement(button)) {
               return true;

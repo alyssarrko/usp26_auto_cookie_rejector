@@ -163,10 +163,12 @@
   async function startWatching() {
     if (await clickMatchingButton(REJECT_TEXTS, "click")) {
       document.documentElement.dataset.autoCookieRejectorState = "rejected";
+      chrome.runtime.sendMessage({ type: "update-status", status: "success" });      
       return;
     }
 
     if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
+      chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
       return;
     }
 

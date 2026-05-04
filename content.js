@@ -266,15 +266,6 @@
     });
 */
   
-    observer.observe(observerTarget, {
-      childList: true,
-      subtree: true
-    });
-
-    setTimeout(() => {
-      observer.disconnect();
-    }, 15000);
-  }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", startWatching, { once: true });

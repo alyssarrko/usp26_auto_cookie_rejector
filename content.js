@@ -96,6 +96,25 @@
         return false;
       }
     }
+
+    //Attach 'status: success' directly to this message to ensure the badge turns green
+    //immediately, even if the site reloads or destroys the button right after the click()
+    button.setAttribute("data-auto-cookie-rejector-click", marker);
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "click-in-main-world",
+        marker,
+        status: "success" 
+      });
+
+      return Boolean(response?.ok);
+    } catch (error) {
+      console.warn("[AutoReject] Main world click failed:", error);
+      return false;
+    } finally {
+      button.removeAttribute("data-auto-cookie-rejector-click");
+    }
     
 
     //Moved the below line to the top of the function

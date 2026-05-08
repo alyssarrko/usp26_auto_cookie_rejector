@@ -132,11 +132,7 @@
     return await clickElement(button);
   }
 
-  async function clickMatchingButton(keywords, mode) {
-    const buttons = getInteractiveElements();
-  }
-
-  async function clickMatchingButton(keywords, mode) {
+    async function clickMatchingButton(keywords, mode) {
     const buttons = getInteractiveElements();
 
     for (const button of buttons) {
@@ -149,8 +145,7 @@
           if (mode === "click") {
             console.log("[AutoReject] Clicking:", text);
 
-            //Send signal before click() to avoid the race condition, ensuring the Service Worker
-            //receives the success status before the site's UI destroys the banner element.
+            // Send signal before click() to avoid the race condition
             chrome.runtime.sendMessage({ type: "update-status", status: "success" });
             
             if (await clickElement(button)) {

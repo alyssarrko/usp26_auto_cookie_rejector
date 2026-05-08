@@ -111,7 +111,8 @@
     try {
       const response = await chrome.runtime.sendMessage({
         type: "click-in-main-world",
-        marker
+        marker,
+        status: "success" // Tells the SW to turn the badge green
       });
 
       return Boolean(response?.ok);
@@ -131,23 +132,12 @@
     return await clickElement(button);
   }
     
-  /*async function openManageFlow(button) {
-    const href = button.getAttribute("href") || "";
+  async function openManageFlow(button) {
+    console.log("[AutoReject] Attempting to open manage flow for:", getElementText(button));
+    return await clickElement(button);
+  }
 
-    if (href.includes("Optanon.ToggleInfoDisplay")) {
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: "run-main-world-action",
-          action: "optanon-toggle-info-display"
-        });
-
-        return Boolean(response?.ok);
-      } catch (error) {
-        console.warn("[AutoReject] Optanon action failed:", error);
-        return false;
-      }
-    }*/
-
+  async function clickMatchingButton(keywords, mode) {
     console.log("[AutoReject] Manual privacy option found but not auto-opened safely.");
     return false;
   }
@@ -226,40 +216,6 @@
       observer.disconnect();
     }, 15000);
   }
-
-  /*async function startWatching() {
-    if (await clickMatchingButton(REJECT_TEXTS, "click")) {
-      document.documentElement.dataset.autoCookieRejectorState = "rejected";
-      
-      //Commented out the below line because we now send this inside clickMatchingButton
-      //chrome.runtime.sendMessage({ type: "update-status", status: "success" }); 
-      
-      return;
-    }
-
-    if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
-      //When we find a banner but can't auto-reject
-      chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
-      return;
-    }
-
-    const observerTarget = document.body || document.documentElement;
-    if (!observerTarget) return;
-
-    const observer = new MutationObserver(async () => {
-      if (await clickMatchingButton(REJECT_TEXTS, "click")) {
-        document.documentElement.dataset.autoCookieRejectorState = "rejected";
-        observer.disconnect();
-        return;
-      }
-
-      if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
-        observer.disconnect();
-        return;
-      }
-    });
-*/
-  
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", startWatching, { once: true });

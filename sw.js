@@ -136,18 +136,14 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 
 // Function to update the icon badge
 function updateBadge(tabId, status) {
-  // Adding this safety check
-  if (!chrome.action) {
-    console.warn("[AutoReject] chrome.action is not available.");
-    return;
-  }
-
-  if (status === "success") {
-    chrome.action.setBadgeText({ tabId, text: "OK" });
-    chrome.action.setBadgeBackgroundColor({ tabId, color: "#4CAF50" });
-  } else if (status === "fail") {
-    chrome.action.setBadgeText({ tabId, text: "!" });
-    chrome.action.setBadgeBackgroundColor({ tabId, color: "#F44336" });
-  }
+  // Safety check: verify tab exists before updating badge to prevent "No tab with id" error
+  chrome.tabs.get(tabId).then(() => {
+    const text = status === "success" ? "OK" : "!";
+    const color = status === "success" ? "#4CAF50" : "#F44336";
+    chrome.action.setBadgeText({ tabId, text });
+    chrome.action.setBadgeBackgroundColor({ tabId, color });
+  }).catch(() => {
+    log("Tab", tabId, "not found. Skipping badge update.");
+  });
 }
 

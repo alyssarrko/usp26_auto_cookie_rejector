@@ -15,7 +15,10 @@
     "decline all",
     "do not accept",
     "only necessary",
-    "strictly necessary"
+    "strictly necessary",
+    "do not sell",
+    "do not sell or share",
+    "opt out"
   ];
 
   const MANAGE_TEXTS = [
@@ -99,24 +102,7 @@
 
     //Attach 'status: success' directly to this message to ensure the badge turns green
     //immediately, even if the site reloads or destroys the button right after the click()
-    button.setAttribute("data-auto-cookie-rejector-click", marker);
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: "click-in-main-world",
-        marker,
-        status: "success" 
-      });
-
-      return Boolean(response?.ok);
-    } catch (error) {
-      console.warn("[AutoReject] Main world click failed:", error);
-      return false;
-    } finally {
-      button.removeAttribute("data-auto-cookie-rejector-click");
-    }
     
-
     //Moved the below line to the top of the function
     //const marker = `acr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     
@@ -138,6 +124,14 @@
   }
 
   async function openManageFlow(button) {
+    console.log("[AutoReject] Attempting to open manage flow for:", getElementText(button));
+
+    // We use our existing clickElement logic because it knows how to 
+    // trigger complex "Main World" buttons used by Nike, Adidas, and OneTrust.
+    return await clickElement(button);
+  }
+    
+  /*async function openManageFlow(button) {
     const href = button.getAttribute("href") || "";
 
     if (href.includes("Optanon.ToggleInfoDisplay")) {
@@ -152,7 +146,7 @@
         console.warn("[AutoReject] Optanon action failed:", error);
         return false;
       }
-    }
+    }*/
 
     console.log("[AutoReject] Manual privacy option found but not auto-opened safely.");
     return false;

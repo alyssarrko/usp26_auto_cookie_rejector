@@ -7,40 +7,40 @@
   window.__autoCookieRejectorRan = true;
 
   const REJECT_TEXTS = [
-    "reject",
-    "reject all",
-    "deny",
-    "deny all",
-    "decline",
-    "decline all",
-    "do not accept",
-    "only necessary",
-    "strictly necessary"
-  ];
+  "reject",
+  "reject all",
+  "deny",
+  "deny all",
+  "decline",
+  "decline all",
+  "do not accept",
+  "only necessary",
+  "strictly necessary"
+].sort((a, b) => b.length - a.length);
 
-  const MANAGE_TEXTS = [
-    "your privacy choices",
-    "privacy choices",
-    "customize",
-    "customise",
-    "manage preferences",
-    "manage cookies",
-    "manage my cookies",
-    "manage privacy choices",
-    "manage your privacy choices",
-    "cookie preferences",
-    "privacy preferences",
-    "consent preferences",
-    "cookie options",
-    "privacy options",
-    "cookie choices",
-    "review cookies",
-    "review settings",
-    "change settings",
-    "update preferences",
-    "cookie settings",
-    "privacy settings"
-  ];
+const MANAGE_TEXTS = [
+  "your privacy choices",
+  "privacy choices",
+  "customize",
+  "customise",
+  "manage preferences",
+  "manage cookies",
+  "manage my cookies",
+  "manage privacy choices",
+  "manage your privacy choices",
+  "cookie preferences",
+  "privacy preferences",
+  "consent preferences",
+  "cookie options",
+  "privacy options",
+  "cookie choices",
+  "review cookies",
+  "review settings",
+  "change settings",
+  "update preferences",
+  "cookie settings",
+  "privacy settings"
+].sort((a, b) => b.length - a.length);
 
   function getInteractiveElements() {
     const primary = Array.from(document.querySelectorAll(
@@ -81,7 +81,6 @@
           type: "run-main-world-action",
           action: "optanon-toggle-info-display"
         });
-
         return Boolean(response?.ok);
       } catch (error) {
         console.warn("[AutoReject] Optanon action failed:", error);
@@ -97,7 +96,6 @@
         type: "click-in-main-world",
         marker
       });
-
       return Boolean(response?.ok);
     } catch (error) {
       console.warn("[AutoReject] Main world click failed:", error);
@@ -116,7 +114,6 @@
           type: "run-main-world-action",
           action: "optanon-toggle-info-display"
         });
-
         return Boolean(response?.ok);
       } catch (error) {
         console.warn("[AutoReject] Optanon action failed:", error);
@@ -133,7 +130,6 @@
 
     for (const button of buttons) {
       const text = getElementText(button);
-
       if (!text) continue;
 
       for (const keyword of keywords) {
@@ -149,7 +145,6 @@
             document.documentElement.dataset.autoCookieRejectorMatch = text;
             if (await openManageFlow(button)) {
               document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
-              return true;
             }
             return true;
           }
@@ -160,13 +155,48 @@
     return false;
   }
 
-  async function startWatching() {
-    if (await clickMatchingButton(REJECT_TEXTS, "click")) {
-      document.documentElement.dataset.autoCookieRejectorState = "rejected";
-      return;
+  function getStoredConsentMode() {
+    return new Promise((resolve) => {
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(["consentMode"], (result) => {
+          resolve(result.consentMode || "reject");
+        });
+      } else {
+        resolve("reject");
+      }
+    });
+  }
+
+  async function tryActionForMode(consentMode) {
+    if (consentMode === "ask") {
+      document.documentElement.dataset.autoCookieRejectorState = "ask";
+      return true;
     }
 
-    if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
+    if (consentMode === "reject") {
+      if (await clickMatchingButton(REJECT_TEXTS, "click")) {
+        document.documentElement.dataset.autoCookieRejectorState = "rejected";
+        return true;
+      }
+
+      if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
+        return true;
+      }
+    }
+
+    if (consentMode === "manage") {
+      if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  async function startWatching() {
+    const consentMode = await getStoredConsentMode();
+
+    if (await tryActionForMode(consentMode)) {
       return;
     }
 
@@ -174,15 +204,8 @@
     if (!observerTarget) return;
 
     const observer = new MutationObserver(async () => {
-      if (await clickMatchingButton(REJECT_TEXTS, "click")) {
-        document.documentElement.dataset.autoCookieRejectorState = "rejected";
+      if (await tryActionForMode(consentMode)) {
         observer.disconnect();
-        return;
-      }
-
-      if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
-        observer.disconnect();
-        return;
       }
     });
 
@@ -201,6 +224,4 @@
   } else {
     startWatching();
   }
-
 })();
-

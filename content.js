@@ -203,38 +203,7 @@
   });
 
   window.autoRejectObserver.observe(observerTarget, { childList: true, subtree: true });
-  setTimeout(stopEverything, 15000);
-}
-  
-    // 2. We don't send the "fail" signal yet. We wait for the MutationObserver 
-    // to see if a Reject button loads in later.
-    const observerTarget = document.body || document.documentElement;
-    if (!observerTarget) return;
-
-    const observer = new MutationObserver(async () => {
-      // Priority: Always try to find a Reject button first
-      if (await clickMatchingButton(REJECT_TEXTS, "click")) {
-        document.documentElement.dataset.autoCookieRejectorState = "rejected";
-        observer.disconnect();
-        return;
-      }
-
-      // If we see a "Manage" entry but no "Reject" button yet, signal a fail.
-      // We don't disconnect the observer here so we can keep looking for "Reject".
-      if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
-        chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
-      }
-    });
-
-    observer.observe(observerTarget, {
-      childList: true,
-      subtree: true
-    });
-
-    // Stop looking after 15 seconds to save browser resources
-    setTimeout(() => {
-      observer.disconnect();
-    }, 15000);
+    setTimeout(stopEverything, 15000);
   }
 
   if (document.readyState === "loading") {
@@ -242,6 +211,4 @@
   } else {
     startWatching();
   }
-
 })();
-

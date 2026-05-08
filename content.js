@@ -124,22 +124,16 @@
     }
   }
 
+      
   async function openManageFlow(button) {
     console.log("[AutoReject] Attempting to open manage flow for:", getElementText(button));
-
-    // We use our existing clickElement logic because it knows how to 
-    // trigger complex "Main World" buttons used by Nike, Adidas, and OneTrust.
-    return await clickElement(button);
-  }
-    
-  async function openManageFlow(button) {
-    console.log("[AutoReject] Attempting to open manage flow for:", getElementText(button));
+    //Using our existing clickElement logic because it knows how to trigger complex
+    //"Main World" buttons used by Nike, Adidas, and OneTrust.
     return await clickElement(button);
   }
 
   async function clickMatchingButton(keywords, mode) {
-    console.log("[AutoReject] Manual privacy option found but not auto-opened safely.");
-    return false;
+    const buttons = getInteractiveElements();
   }
 
   async function clickMatchingButton(keywords, mode) {

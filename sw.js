@@ -125,7 +125,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Normal page load
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === "complete" && tab.url) {
+  if (changeInfo.status === "complete" && changeInfo.url) { // Added changeInfo.url check
     injectContentScript(tabId, tab.url);
   }
 });

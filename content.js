@@ -183,6 +183,7 @@
   // 1. Priority: Try to Reject immediately
   if (await clickMatchingButton(REJECT_TEXTS, "click")) {
     document.documentElement.dataset.autoCookieRejectorState = "rejected";
+    showToast("Cookies Automatically Rejected");
     stopEverything();
     return;
   }
@@ -194,6 +195,7 @@
     // If we find a Reject button, click it and STOP the observer
     if (await clickMatchingButton(REJECT_TEXTS, "click")) {
       document.documentElement.dataset.autoCookieRejectorState = "rejected";
+      showToast("Cookies Automatically Rejected");
       stopEverything(); 
       return;
     }
@@ -214,4 +216,34 @@
   } else {
     startWatching();
   }
+
+  function showToast(message) {
+    const toast = document.createElement("div");
+    toast.textContent = message;
+    // Styling the toast directly in JS for simplicity
+    Object.assign(toast.style, {
+      position: "fixed",
+      bottom: "20px",
+      right: "20px",
+      backgroundColor: "#333",
+      color: "#fff",
+      padding: "12px 20px",
+      borderRadius: "8px",
+      fontSize: "14px",
+      zIndex: "999999",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      transition: "opacity 0.5s ease",
+      pointerEvents: "none",
+      fontFamily: "sans-serif"
+    });
+
+    document.body.appendChild(toast);
+
+    // Fade out and remove after 3 seconds
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 500);
+    }, 3000);
+  }
+
 })();

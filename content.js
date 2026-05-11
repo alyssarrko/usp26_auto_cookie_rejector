@@ -16,6 +16,7 @@
     "do not accept",
     "only necessary",
     "strictly necessary",
+    "essential only",
     "do not sell",
     "do not sell or share",
     "opt out"
@@ -42,7 +43,9 @@
     "change settings",
     "update preferences",
     "cookie settings",
-    "privacy settings"
+    "privacy settings",
+    "ok",
+    "okay"
   ];
 
   function getInteractiveElements() {
@@ -146,7 +149,7 @@
             console.log("[AutoReject] Clicking:", text);
 
             // Send signal before click() to avoid the race condition
-            chrome.runtime.sendMessage({ type: "update-status", status: "success" });
+            chrome.runtime.sendMessage({ status: "success" });
             
             if (await clickElement(button)) {
               return true;
@@ -195,15 +198,15 @@
       return;
     }
 
-    // If we only find a Manage button, signal fail but DON'T stop yet 
-    // in case a Reject button appears later.
-    if (await clickMatchingButton(MANAGE_TEXTS, "notice")) {
-      chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
+    // If we find Manage, click it, signal fail, then stop looking for a moment
+    if (await clickMatchingButton(MANAGE_TEXTS, "click")) {
+      chrome.runtime.sendMessage({ status: "fail" });
+    // We don't stopEverything() yet because a Reject button might appear in the popup
     }
   });
 
   window.autoRejectObserver.observe(observerTarget, { childList: true, subtree: true });
-    setTimeout(stopEverything, 15000);
+  setTimeout(stopEverything, 15000);
   }
 
   if (document.readyState === "loading") {

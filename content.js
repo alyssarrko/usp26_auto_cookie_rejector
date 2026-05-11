@@ -151,8 +151,11 @@
           if (mode === "click") {
             console.log("[AutoReject] Clicking:", text);                      
             if (await clickElement(button)) {
-              // Move the success message and toast trigger here so they only fire IF the click worked
-              // ALL feedback happens here once per success
+              // Clear the "Manual Action" timer if we just successfully rejected!
+              if (window.manualToastTimeout) {
+                clearTimeout(window.manualToastTimeout);
+                window.manualToastTimeout = null;
+              }
               showToast("Cookies Automatically Rejected");
               chrome.runtime.sendMessage({ status: "success" });
               return true;
@@ -204,10 +207,22 @@
 
     // Only if rejection fails, look for Manage/Notice text
     if (await clickMatchingButton(MANAGE_TEXTS, "click")) {
+      // We found a way to open settings, but we DON'T show the toast yet.
+      // We turn the badge red to indicate we are in 'manual mode'
       chrome.runtime.sendMessage({ status: "fail" });
-      showToast("Manual Action Required");
+      
+      // We only show the "Manual Action" toast if the Reject button 
+      // hasn't been found after 3 seconds of the banner being visible.
+      if (!window.manualToastTimeout) {
+        window.manualToastTimeout = setTimeout(() => {
+          // Double check we haven't successfully rejected in the meantime
+          if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
+            showToast("Manual Action Required");
+          }
+        }, 3000);
+      }
     }
-  });
+  }); 
 
   window.autoRejectObserver.observe(observerTarget, { childList: true, subtree: true });
   setTimeout(stopEverything, 15000);
@@ -241,11 +256,15 @@
 
     document.body.appendChild(toast);
 
-    // Fade out and remove after 6 seconds for better visibility
+    // Fade out and remove after 10 seconds for better visibility
     setTimeout(() => {
+      toast.style.transition = "opacity 1.5s ease"; // Slower fade
       toast.style.opacity = "0";
-      setTimeout(() => toast.remove(), 500);
-    }, 6000);
+      setTimeout(() => {
+        toast.remove();
+        window.manualToastTimeout = null; // Reset the timeout tracker
+      }, 1500);
+    }, 10000);
   }
 
 })();

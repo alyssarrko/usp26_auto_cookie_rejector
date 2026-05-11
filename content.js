@@ -45,7 +45,10 @@
     "cookie settings",
     "privacy settings",
     "ok",
-    "okay"
+    "okay",
+    "my settings",
+    "cookie notice",
+    "do not sell or share my personal information"
   ];
 
   function getInteractiveElements() {
@@ -146,12 +149,12 @@
       for (const keyword of keywords) {
         if (text.includes(keyword)) {
           if (mode === "click") {
-            console.log("[AutoReject] Clicking:", text);
-
-            // Send signal before click() to avoid the race condition
-            chrome.runtime.sendMessage({ status: "success" });
-            
+            console.log("[AutoReject] Clicking:", text);                      
             if (await clickElement(button)) {
+              // Move the success message and toast trigger here so they only fire IF the click worked
+              // ALL feedback happens here once per success
+              showToast("Cookies Automatically Rejected");
+              chrome.runtime.sendMessage({ status: "success" });
               return true;
             }
           } else {
@@ -183,8 +186,7 @@
   // 1. Priority: Try to Reject immediately
   if (await clickMatchingButton(REJECT_TEXTS, "click")) {
     document.documentElement.dataset.autoCookieRejectorState = "rejected";
-    showToast("Cookies Automatically Rejected");
-    stopEverything();
+    stopEverything(); // Toast is already handled by the function above
     return;
   }
 
@@ -192,18 +194,18 @@
   if (!observerTarget) return;
 
   window.autoRejectObserver = new MutationObserver(async () => {
-    // If we find a Reject button, click it and STOP the observer
+    // 1. Check for REJECT buttons first
     if (await clickMatchingButton(REJECT_TEXTS, "click")) {
       document.documentElement.dataset.autoCookieRejectorState = "rejected";
-      showToast("Cookies Automatically Rejected");
       stopEverything(); 
       return;
     }
 
-    // If we find Manage, click it, signal fail, then stop looking for a moment
+    // 2. Then check for MANAGE buttons
     if (await clickMatchingButton(MANAGE_TEXTS, "click")) {
       chrome.runtime.sendMessage({ status: "fail" });
-    // We don't stopEverything() yet because a Reject button might appear in the popup
+      showToast("Manual Action Required");
+      stopEverything();
     }
   });
 
@@ -239,11 +241,11 @@
 
     document.body.appendChild(toast);
 
-    // Fade out and remove after 3 seconds
+    // Fade out and remove after 6 seconds for better visibility
     setTimeout(() => {
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 500);
-    }, 3000);
+    }, 6000);
   }
 
 })();

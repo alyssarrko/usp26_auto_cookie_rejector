@@ -4,14 +4,15 @@
   "version": "1.0",
   "description": "Automatically rejects cookie consent banners when possible.",
 
-  "action": {},
+  "action": {
+    "default_title": "Auto Cookie Rejector"
+  },
 
   "permissions": [
     "activeTab",
     "scripting",
     "tabs",
-    "webNavigation",
-    "notifications"
+    "webNavigation"
   ],
 
   "background": {
@@ -19,14 +20,15 @@
   },
 
   "host_permissions": [
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ],
 
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ]
 }

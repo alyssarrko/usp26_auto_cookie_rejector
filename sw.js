@@ -125,8 +125,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Normal page load
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Inject on every complete load to ensure refreshes are caught
-  if (changeInfo.status === "complete") {
+  // Check for changeInfo.status AND ensure tab.url exists
+  // This prevents double-injection on Amtrak's background redirects
+  if (changeInfo.status === "complete" && tab.url) {
     injectContentScript(tabId, tab.url);
   }
 });

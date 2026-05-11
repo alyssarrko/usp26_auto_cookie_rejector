@@ -100,10 +100,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const tabId = sender.tab?.id;
   if (typeof tabId !== "number") return;
 
-  // 1. Handle Badge Updates
+  // 1. Handle Badge Updates (Handles { status: "success" } or { status: "fail" })
   if (message.status) {
     updateBadge(tabId, message.status);
-    if (message.type === "update-status") {
+    
+    // If it's just a status update, we can reply and stop here
+    if (!message.type || message.type === "update-status") {
       sendResponse({ ok: true });
       return;
     }

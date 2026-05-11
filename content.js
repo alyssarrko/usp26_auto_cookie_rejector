@@ -194,18 +194,18 @@
   if (!observerTarget) return;
 
   window.autoRejectObserver = new MutationObserver(async () => {
-    // 1. Check for REJECT buttons first
-    if (await clickMatchingButton(REJECT_TEXTS, "click")) {
+    // ALWAYS try to reject first in every cycle
+    const rejected = await clickMatchingButton(REJECT_TEXTS, "click");
+    if (rejected) {
       document.documentElement.dataset.autoCookieRejectorState = "rejected";
       stopEverything(); 
       return;
     }
 
-    // 2. Then check for MANAGE buttons
+    // Only if rejection fails, look for Manage/Notice text
     if (await clickMatchingButton(MANAGE_TEXTS, "click")) {
       chrome.runtime.sendMessage({ status: "fail" });
       showToast("Manual Action Required");
-      stopEverything();
     }
   });
 

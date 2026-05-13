@@ -223,11 +223,12 @@
         }, 4000); // Increased to 4s to let Amtrak/OneTrust finish loading
       }
     }
-  }); // Closes the MutationObserver callback
+  } // <--- THIS WAS MISSING. It closes line 211.
+}); 
 
   window.autoRejectObserver.observe(observerTarget, { childList: true, subtree: true });
   setTimeout(stopEverything, 15000);
-  }
+}
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", startWatching, { once: true });

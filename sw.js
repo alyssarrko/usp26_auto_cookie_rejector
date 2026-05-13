@@ -108,17 +108,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const tabId = sender.tab?.id;
   if (typeof tabId !== "number") return;
 
-  // 1. Handle Badge Updates (Handles { status: "success" } or { status: "fail" })
+  // 1. Handle Status Updates (Direct update to stop Nike flickering)
   if (message.status) {
-    // Only update if the status is different to prevent flickering on Nike/Adidas
-    chrome.action.getBadgeText({ tabId }).then(currentText => {
-      const nextText = message.status === "success" ? "OK" : "!";
-      if (currentText !== nextText) {
-        updateBadge(tabId, message.status);
-      }
-    });
+    updateBadge(tabId, message.status);
+    // If it's just a status sync, we can respond immediately
+    if (message.type === "update-status") {
+      sendResponse({ ok: true });
+      return;
+    }
   }
-
+  
   // 2. Handle Main World Actions (Ikea/Nike)
   if (message.type === "click-in-main-world" || message.type === "run-main-world-action") {
     const task = message.type === "run-main-world-action"
@@ -148,7 +147,8 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 
 // Function to update the icon badge
 function updateBadge(tabId, status) {
-  // Safety check: verify tab exists before updating badge to prevent "No tab with id" error
+  if (!chrome.action) return;
+
   chrome.tabs.get(tabId).then(() => {
     const text = status === "success" ? "OK" : "!";
     const color = status === "success" ? "#4CAF50" : "#F44336";
@@ -158,4 +158,3 @@ function updateBadge(tabId, status) {
     log("Tab", tabId, "not found. Skipping badge update.");
   });
 }
-

@@ -45,7 +45,10 @@
     "cookie settings",
     "privacy settings",
     "my settings",
-    "do not sell or share my personal information"
+    "do not sell or share my personal information",
+    "purposes",
+    "customize settings",
+    "no, thanks"
   ];
 
   function getInteractiveElements() {
@@ -207,68 +210,69 @@
     }
 
     // 2. Only look for Manage if we haven't already succeeded
-    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
-      if (await clickMatchingButton(MANAGE_TEXTS, "manage")) { // Changed mode to "manage"
-      // We found a way to open settings, but we DON'T show the toast yet.
-      // We turn the badge red to indicate we are in 'manual mode'
-      chrome.runtime.sendMessage({ status: "fail" });
-      
-      // We only show the "Manual Action" toast if the Reject button 
-      // hasn't been found after 4 seconds of the banner being visible.
-      if (!window.manualToastTimeout) {
-        window.manualToastTimeout = setTimeout(() => {
-          if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
-            showToast("Manual Action Required");
-          }
-        }, 4000); // Increased to 4s to let Amtrak/OneTrust finish loading
+    // We found a way to open settings, but we DON'T show the toast yet.
+    // We turn the badge red to indicate we are in 'manual mode'
+    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected" &&
+        document.documentElement.dataset.autoCookieRejectorState !== "opened-manual-choice") {
+      if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
+        chrome.runtime.sendMessage({ status: "fail" });
+         
+        // We only show the "Manual Action" toast if the Reject button 
+        // hasn't been found after 4 seconds of the banner being visible.
+        if (!window.manualToastTimeout) {
+          window.manualToastTimeout = setTimeout(() => {
+            if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
+              showToast("Manual Action Required");
+            }
+          }, 4000); // Increased to 4s to let Amtrak/OneTrust finish loading
+        }
       }
     }
-  } // <--- THIS WAS MISSING. It closes line 211.
-}); 
+  });
 
   window.autoRejectObserver.observe(observerTarget, { childList: true, subtree: true });
   setTimeout(stopEverything, 15000);
 }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", startWatching, { once: true });
-  } else {
-    startWatching();
-  }
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startWatching, { once: true });
+} else {
+  startWatching();
+}
 
-  function showToast(message) {
-    if (Array.from(document.querySelectorAll('div')).some(el => el.textContent === message)) return;
-    
-    const toast = document.createElement("div");
-    toast.textContent = message;
-    // Styling the toast directly in JS for simplicity
-    Object.assign(toast.style, {
-      position: "fixed",
-      bottom: "80px", // Moved up so banners don't cover it
-      right: "20px",
-      backgroundColor: "#4444ff", // Blue background so it's visible ove black banners
-      color: "#fff",
-      padding: "12px 20px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      zIndex: "999999",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-      transition: "opacity 0.5s ease",
-      pointerEvents: "none",
-      fontFamily: "sans-serif"
-    });
+function showToast(message) {
+  if (Array.from(document.querySelectorAll('div')).some(el => el.textContent === message)) return;
+  
+  const toast = document.createElement("div");
+  toast.textContent = message;
+  Object.assign(toast.style, {
+    position: "fixed",
+    top: "50%",
+    transform: "translateY(-50%)",
+    right: "20px",
+    backgroundColor: "#4444ff", // Blue background so it's visible over black banners
+    color: "#fff",
+    padding: "12px 20px",
+    borderRadius: "8px",
+    fontSize: "14px",
+    zIndex: "999999",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    transition: "opacity 0.5s ease",
+    pointerEvents: "none",
+    fontFamily: "sans-serif"
+  });
 
-    document.body.appendChild(toast);
+  document.body.appendChild(toast);
 
-    // Fade out and remove after 10 seconds for better visibility
+  // Fade out and remove after 10 seconds for better visibility
+  setTimeout(() => {
+    toast.style.transition = "opacity 1.5s ease"; // Slower fade
+    toast.style.opacity = "0";
     setTimeout(() => {
-      toast.style.transition = "opacity 1.5s ease"; // Slower fade
-      toast.style.opacity = "0";
-      setTimeout(() => {
-        toast.remove();
-        window.manualToastTimeout = null; // Reset the timeout tracker
-      }, 1500);
-    }, 10000);
-  }
+      toast.remove();
+      window.manualToastTimeout = null; // Reset the timeout tracker
+    }, 1500);
+  }, 10000);
+}
 
 })();

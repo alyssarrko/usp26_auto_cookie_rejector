@@ -135,8 +135,18 @@
       
   async function openManageFlow(button) {
     console.log("[AutoReject] Attempting to open manage flow for:", getElementText(button));
-    //Using our existing clickElement logic because it knows how to trigger complex
-    //"Main World" buttons used by Nike, Adidas, and OneTrust.
+    
+    const href = button.getAttribute("href") || "";
+    // Specific Fix for IKEA/OneTrust: If the button uses the Optanon toggle, trigger it directly in the Main World
+    if (href.includes("Optanon.ToggleInfoDisplay")) {
+      const response = await chrome.runtime.sendMessage({
+        type: "run-main-world-action",
+        action: "optanon-toggle-info-display"
+      });
+      return Boolean(response?.ok);
+    }
+
+    // Default to standard Main World click for Nike/Adidas
     return await clickElement(button);
   }
 
@@ -212,11 +222,10 @@
     }
 
     // 2. Only look for Manage if we haven't already succeeded
-    // We turn the badge red to indicate we are in 'manual mode'
-    // Removed 'opened-manual-choice' check to ensure Nike/Adidas/IKEA menus trigger correctly
+    // Use 'update-status' type to match the new SW listener logic for stability
     if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
-        chrome.runtime.sendMessage({ status: "fail" });
+        chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
          
         // We only show the "Manual Action" toast if the Reject button 
         // hasn't been found after 4 seconds of the banner being visible.

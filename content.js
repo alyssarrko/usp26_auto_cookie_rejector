@@ -149,7 +149,7 @@
       return Boolean(response?.ok);
     }
 
-    // Default to standard Main World click for Nike/Adidas
+    // Default to standard Main World click for Nike/Adidas/Handshake
     return await clickElement(button);
   }
 
@@ -181,8 +181,7 @@
             document.documentElement.dataset.autoCookieRejectorMatch = text;
             if (await openManageFlow(button)) {
               document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
-              // Stop the observer loop for this trigger
-              if (window.autoRejectObserver) window.autoRejectObserver.disconnect();
+              // Disconnect logic moved to startWatching for better stability
               return true;
             }
             return true;
@@ -203,7 +202,7 @@
     }
   };
 
-  // 1. Priority: Try to Reject immediately
+  // Priority: Try to Reject immediately
   if (await clickMatchingButton(REJECT_TEXTS, "click")) {
     document.documentElement.dataset.autoCookieRejectorState = "rejected";
     stopEverything(); // Toast is already handled by the function above
@@ -227,10 +226,14 @@
     }
 
     // 2. Only look for Manage if we haven't already succeeded
-    // Use 'update-status' type to match the new SW listener logic for stability
     if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
         chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
+
+        // IKEA/Adidas Stability: Only stop watching if the manual choice is confirmed open
+        if (document.documentElement.dataset.autoCookieRejectorState === "opened-manual-choice") {
+          stopEverything();
+        }
          
         // We only show the "Manual Action" toast if the Reject button 
         // hasn't been found after 4 seconds of the banner being visible.

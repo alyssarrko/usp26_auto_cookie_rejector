@@ -110,16 +110,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // 1. Handle Badge Updates (Handles { status: "success" } or { status: "fail" })
   if (message.status) {
-    updateBadge(tabId, message.status);
-    
-    // If it's just a status update, we can reply and stop here
-    if (!message.type || message.type === "update-status") {
-      sendResponse({ ok: true });
-      return;
-    }
+    // Only update if the status is different to prevent flickering on Nike/Adidas
+    chrome.action.getBadgeText({ tabId }).then(currentText => {
+      const nextText = message.status === "success" ? "OK" : "!";
+      if (currentText !== nextText) {
+        updateBadge(tabId, message.status);
+      }
+    });
   }
 
-  // 2. Handle Main World Actions (Ikea)
+  // 2. Handle Main World Actions (Ikea/Nike)
   if (message.type === "click-in-main-world" || message.type === "run-main-world-action") {
     const task = message.type === "run-main-world-action"
       ? runPrivacyActionInMainWorld(tabId, sender.frameId, message.action)

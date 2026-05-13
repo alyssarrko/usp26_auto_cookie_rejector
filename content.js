@@ -17,12 +17,12 @@
     "only necessary",
     "strictly necessary",
     "essential only",
-    "do not sell",
-    "do not sell or share",
     "opt out"
   ];
 
   const MANAGE_TEXTS = [
+    "do not sell",
+    "do not sell or share",
     "your privacy choices",
     "privacy choices",
     "customize",
@@ -134,6 +134,9 @@
 
       
   async function openManageFlow(button) {
+    // Stop loop: don't re-open if already in manual mode
+    if (document.documentElement.dataset.autoCookieRejectorState === "opened-manual-choice") return false;
+
     console.log("[AutoReject] Attempting to open manage flow for:", getElementText(button));
     
     const href = button.getAttribute("href") || "";
@@ -178,6 +181,8 @@
             document.documentElement.dataset.autoCookieRejectorMatch = text;
             if (await openManageFlow(button)) {
               document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
+              // Stop the observer loop for this trigger
+              if (window.autoRejectObserver) window.autoRejectObserver.disconnect();
               return true;
             }
             return true;

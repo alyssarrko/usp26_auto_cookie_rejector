@@ -223,7 +223,7 @@
         }, 4000); // Increased to 4s to let Amtrak/OneTrust finish loading
       }
     }
-  });
+  }); // Closes the MutationObserver callback
 
   window.autoRejectObserver.observe(observerTarget, { childList: true, subtree: true });
   setTimeout(stopEverything, 15000);
@@ -236,6 +236,8 @@
   }
 
   function showToast(message) {
+    if (Array.from(document.querySelectorAll('div')).some(el => el.textContent === message)) return;
+    
     const toast = document.createElement("div");
     toast.textContent = message;
     // Styling the toast directly in JS for simplicity

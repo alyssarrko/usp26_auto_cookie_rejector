@@ -48,7 +48,9 @@
     "do not sell or share my personal information",
     "purposes",
     "customize settings",
-    "no, thanks"
+    "no, thanks",
+    "do not sell or share",
+    "privacy center"
   ];
 
   function getInteractiveElements() {
@@ -210,10 +212,9 @@
     }
 
     // 2. Only look for Manage if we haven't already succeeded
-    // We found a way to open settings, but we DON'T show the toast yet.
     // We turn the badge red to indicate we are in 'manual mode'
-    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected" &&
-        document.documentElement.dataset.autoCookieRejectorState !== "opened-manual-choice") {
+    // Removed 'opened-manual-choice' check to ensure Nike/Adidas/IKEA menus trigger correctly
+    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
         chrome.runtime.sendMessage({ status: "fail" });
          

@@ -38,11 +38,19 @@ async function injectContentScript(tabId, url) {
   }
 
   try {
+    // PREVENT GLITCHING: Check if script already ran in this tab
+    const [{result}] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => !!window.__autoCookieRejectorRan
+    }).catch(() => [{result: false}]);
+
+    if (result) {
+      log("Already running in tab:", tabId);
+      return;
+    }
+
     await chrome.scripting.executeScript({
-      target: {
-        tabId: tabId,
-        allFrames: true
-      },
+      target: { tabId: tabId, allFrames: true },
       files: ["content.js"]
     });
 

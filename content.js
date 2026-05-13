@@ -221,7 +221,7 @@
             showToast("Manual Action Required");
           }
         }, 4000); // Increased to 4s to let Amtrak/OneTrust finish loading
-     }
+      }
     }
   });
 

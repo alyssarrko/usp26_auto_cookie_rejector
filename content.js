@@ -44,10 +44,7 @@
     "update preferences",
     "cookie settings",
     "privacy settings",
-    "ok",
-    "okay",
     "my settings",
-    "cookie notice",
     "do not sell or share my personal information"
   ];
 
@@ -197,32 +194,36 @@
   if (!observerTarget) return;
 
   window.autoRejectObserver = new MutationObserver(async () => {
-    // ALWAYS try to reject first in every cycle
+    // 1. ALWAYS try to reject first
     const rejected = await clickMatchingButton(REJECT_TEXTS, "click");
     if (rejected) {
+      if (window.manualToastTimeout) {
+        clearTimeout(window.manualToastTimeout);
+        window.manualToastTimeout = null;
+      }
       document.documentElement.dataset.autoCookieRejectorState = "rejected";
       stopEverything(); 
       return;
     }
 
-    // Only if rejection fails, look for Manage/Notice text
-    if (await clickMatchingButton(MANAGE_TEXTS, "click")) {
+    // 2. Only look for Manage if we haven't already succeeded
+    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
+      if (await clickMatchingButton(MANAGE_TEXTS, "manage")) { // Changed mode to "manage"
       // We found a way to open settings, but we DON'T show the toast yet.
       // We turn the badge red to indicate we are in 'manual mode'
       chrome.runtime.sendMessage({ status: "fail" });
       
       // We only show the "Manual Action" toast if the Reject button 
-      // hasn't been found after 3 seconds of the banner being visible.
+      // hasn't been found after 4 seconds of the banner being visible.
       if (!window.manualToastTimeout) {
         window.manualToastTimeout = setTimeout(() => {
-          // Double check we haven't successfully rejected in the meantime
           if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
             showToast("Manual Action Required");
           }
-        }, 3000);
-      }
+        }, 4000); // Increased to 4s to let Amtrak/OneTrust finish loading
+     }
     }
-  }); 
+  });
 
   window.autoRejectObserver.observe(observerTarget, { childList: true, subtree: true });
   setTimeout(stopEverything, 15000);
@@ -240,9 +241,9 @@
     // Styling the toast directly in JS for simplicity
     Object.assign(toast.style, {
       position: "fixed",
-      bottom: "20px",
+      bottom: "80px", // Moved up so banners don't cover it
       right: "20px",
-      backgroundColor: "#333",
+      backgroundColor: "#4444ff", // Blue background so it's visible ove black banners
       color: "#fff",
       padding: "12px 20px",
       borderRadius: "8px",

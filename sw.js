@@ -110,12 +110,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // 1. Handle Status Updates (Check text first to stop Nike flickering)
   if (message.status) {
-    chrome.action.getBadgeText({ tabId }).then(currentText => {
-      const nextText = message.status === "success" ? "OK" : "!";
-      if (currentText !== nextText) {
-        updateBadge(tabId, message.status);
-      }
-    }).catch(() => updateBadge(tabId, message.status));
+    updateBadge(tabId, message.status);
     
     if (message.type === "update-status") {
       sendResponse({ ok: true });
@@ -153,11 +148,11 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 // Function to update the icon badge
 function updateBadge(tabId, status) {
   if (!chrome.action) return;
-
-  // Set text and color directly with .catch(() => {}) to suppress "No tab with id" errors
+  
   const text = status === "success" ? "OK" : "!";
   const color = status === "success" ? "#4CAF50" : "#F44336";
-
+  
+  // Simplified update to ensure OneTrust "!" always triggers
   chrome.action.setBadgeText({ tabId, text }).catch(() => {});
   chrome.action.setBadgeBackgroundColor({ tabId, color }).catch(() => {});
 }

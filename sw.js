@@ -108,10 +108,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const tabId = sender.tab?.id;
   if (typeof tabId !== "number") return;
 
-  // 1. Handle Status Updates (Direct update to stop Nike flickering)
+  // 1. Handle Status Updates (Check text first to stop Nike flickering)
   if (message.status) {
-    updateBadge(tabId, message.status);
-    // If it's just a status sync, we can respond immediately
+    chrome.action.getBadgeText({ tabId }).then(currentText => {
+      const nextText = message.status === "success" ? "OK" : "!";
+      if (currentText !== nextText) {
+        updateBadge(tabId, message.status);
+      }
+    }).catch(() => updateBadge(tabId, message.status));
+    
     if (message.type === "update-status") {
       sendResponse({ ok: true });
       return;
@@ -149,12 +154,10 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 function updateBadge(tabId, status) {
   if (!chrome.action) return;
 
-  chrome.tabs.get(tabId).then(() => {
-    const text = status === "success" ? "OK" : "!";
-    const color = status === "success" ? "#4CAF50" : "#F44336";
-    chrome.action.setBadgeText({ tabId, text });
-    chrome.action.setBadgeBackgroundColor({ tabId, color });
-  }).catch(() => {
-    log("Tab", tabId, "not found. Skipping badge update.");
-  });
+  // Set text and color directly with .catch(() => {}) to suppress "No tab with id" errors
+  const text = status === "success" ? "OK" : "!";
+  const color = status === "success" ? "#4CAF50" : "#F44336";
+
+  chrome.action.setBadgeText({ tabId, text }).catch(() => {});
+  chrome.action.setBadgeBackgroundColor({ tabId, color }).catch(() => {});
 }

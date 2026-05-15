@@ -110,7 +110,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // 1. Handle Status Updates (Direct update to stop Nike flickering)
   if (message.status) {
+    // Only update if the status is a progression (don't downgrade "success" to "fail" during redirects)
     chrome.action.getBadgeText({ tabId }).then(currentText => {
+      if (currentText === "OK" && message.status === "fail") {
+        log("Ignoring status downgrade to preserve 'OK' state during redirect.");
+        return;
+      }
+
       const nextText = message.status === "success" ? "OK" : "!";
       if (currentText !== nextText) {
         updateBadge(tabId, message.status);

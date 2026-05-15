@@ -195,6 +195,7 @@
                 window.autoRejectObserver = null;
             }
             return true;
+            }
           }
         }
       }

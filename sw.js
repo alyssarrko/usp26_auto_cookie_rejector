@@ -110,7 +110,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // 1. Handle Status Updates (Direct update to stop Nike flickering)
   if (message.status) {
-    updateBadge(tabId, message.status);
+    chrome.action.getBadgeText({ tabId }).then(currentText => {
+      const nextText = message.status === "success" ? "OK" : "!";
+      if (currentText !== nextText) {
+        updateBadge(tabId, message.status);
+      }
+    }).catch(() => updateBadge(tabId, message.status));
+    
     // If it's just a status sync, we can respond immediately
     if (message.type === "update-status") {
       sendResponse({ ok: true });
@@ -148,7 +154,7 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 // Function to update the icon badge
 function updateBadge(tabId, status) {
   if (!chrome.action) return;
-
+  
   chrome.tabs.get(tabId).then(() => {
     const text = status === "success" ? "OK" : "!";
     const color = status === "success" ? "#4CAF50" : "#F44336";

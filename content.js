@@ -178,8 +178,8 @@
           } else {
             console.log("[AutoReject] Found privacy choices entry:", text);
 
-            // Handshake Fix: If we find 'Purposes', prioritize it to open the correct view
-            if (text === "purposes") {
+            // Handshake Fix: prioritize the 'Purposes' tab specifically
+            if (text.includes("purposes")) {
                console.log("[AutoReject] Targeted Handshake 'Purposes' tab");
             }
             
@@ -194,13 +194,12 @@
                 window.autoRejectObserver.disconnect();
                 window.autoRejectObserver = null;
             }
-            return true;
+              return true;
             }
           }
         }
       }
     }
-
     return false;
   }
 

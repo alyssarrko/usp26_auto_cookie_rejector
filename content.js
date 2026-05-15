@@ -144,6 +144,9 @@
         type: "run-main-world-action",
         action: "optanon-toggle-info-display"
       });
+      if (response?.ok) {
+        document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
+      }
       return Boolean(response?.ok);
     }
 
@@ -222,8 +225,9 @@
       return;
     }
 
-    // 2. Only look for Manage if we haven't already succeeded
-    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
+    // 2. Only look for Manage if we haven't already succeeded or opened a manual flow
+    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected" && 
+        document.documentElement.dataset.autoCookieRejectorState !== "opened-manual-choice") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
         chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
          

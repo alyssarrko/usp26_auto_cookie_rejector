@@ -17,12 +17,12 @@
     "only necessary",
     "strictly necessary",
     "essential only",
+    "do not sell",
+    "do not sell or share",
     "opt out"
   ];
 
   const MANAGE_TEXTS = [
-    "do not sell",
-    "do not sell or share",
     "your privacy choices",
     "privacy choices",
     "customize",
@@ -32,6 +32,7 @@
     "manage my cookies",
     "manage privacy choices",
     "manage your privacy choices",
+    "manage consent preferences"
     "cookie preferences",
     "privacy preferences",
     "consent preferences",
@@ -134,9 +135,6 @@
 
       
   async function openManageFlow(button) {
-    // Stop loop: don't re-open if already in manual mode
-    if (document.documentElement.dataset.autoCookieRejectorState === "opened-manual-choice") return false;
-
     console.log("[AutoReject] Attempting to open manage flow for:", getElementText(button));
     
     const href = button.getAttribute("href") || "";
@@ -177,29 +175,18 @@
             }
           } else {
             console.log("[AutoReject] Found privacy choices entry:", text);
-
-            // Handshake Fix: prioritize the 'Purposes' tab specifically
-            if (text.includes("purposes")) {
-               console.log("[AutoReject] Targeted Handshake 'Purposes' tab");
-            }
-            
             document.documentElement.dataset.autoCookieRejectorState = "manual-choice";
             document.documentElement.dataset.autoCookieRejectorMatch = text;
             if (await openManageFlow(button)) {
               document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
-              
-              // IKEA/Adidas Fix: Stop the observer immediately upon opening the flow 
-              // to prevent the 'glitching' and multiple trigger attempts.
-              if (window.autoRejectObserver) {
-                window.autoRejectObserver.disconnect();
-                window.autoRejectObserver = null;
-            }
               return true;
             }
+            return true;
           }
         }
       }
     }
+
     return false;
   }
 
@@ -238,16 +225,7 @@
     // 2. Only look for Manage if we haven't already succeeded
     if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
-        // If we successfully opened a manage flow, we don't treat it as a 'fail' 
-        // for sites like IKEA where this is the intended final automated step.
-        if (document.documentElement.dataset.autoCookieRejectorState !== "opened-manual-choice") {
-          chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
-        } else {
-          // If it's opened, ensure the badge stays red '!' but don't trigger the toast later
-          chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
-          stopEverything();
-          return; 
-        }
+        chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
          
         // We only show the "Manual Action" toast if the Reject button 
         // hasn't been found after 4 seconds of the banner being visible.

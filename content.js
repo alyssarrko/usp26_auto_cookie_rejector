@@ -32,7 +32,6 @@
     "manage my cookies",
     "manage privacy choices",
     "manage your privacy choices",
-    "manage consent preferences",
     "cookie preferences",
     "privacy preferences",
     "consent preferences",
@@ -144,13 +143,10 @@
         type: "run-main-world-action",
         action: "optanon-toggle-info-display"
       });
-      if (response?.ok) {
-        document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
-      }
       return Boolean(response?.ok);
     }
 
-    // Default to standard Main World click for Nike/Adidas/Handshake
+    // Default to standard Main World click for Nike/Adidas
     return await clickElement(button);
   }
 
@@ -202,7 +198,7 @@
     }
   };
 
-  // Priority: Try to Reject immediately
+  // 1. Priority: Try to Reject immediately
   if (await clickMatchingButton(REJECT_TEXTS, "click")) {
     document.documentElement.dataset.autoCookieRejectorState = "rejected";
     stopEverything(); // Toast is already handled by the function above
@@ -225,9 +221,9 @@
       return;
     }
 
-    // 2. Only look for Manage if we haven't already succeeded or opened a manual flow
-    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected" && 
-        document.documentElement.dataset.autoCookieRejectorState !== "opened-manual-choice") {
+    // 2. Only look for Manage if we haven't already succeeded
+    // Use 'update-status' type to match the new SW listener logic for stability
+    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
         chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
          

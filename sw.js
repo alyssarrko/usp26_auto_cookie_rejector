@@ -108,7 +108,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const tabId = sender.tab?.id;
   if (typeof tabId !== "number") return;
 
-  // 1. Handle Status Updates (Check text first to stop Nike flickering)
+  // 1. Handle Status Updates (Direct update to stop Nike flickering)
   if (message.status) {
     chrome.action.getBadgeText({ tabId }).then(currentText => {
       const nextText = message.status === "success" ? "OK" : "!";
@@ -117,6 +117,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }).catch(() => updateBadge(tabId, message.status));
     
+    // If it's just a status sync, we can respond immediately
     if (message.type === "update-status") {
       sendResponse({ ok: true });
       return;
@@ -154,10 +155,12 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
 function updateBadge(tabId, status) {
   if (!chrome.action) return;
   
-  const text = status === "success" ? "OK" : "!";
-  const color = status === "success" ? "#4CAF50" : "#F44336";
-  
-  // Simplified update to ensure OneTrust "!" always triggers
-  chrome.action.setBadgeText({ tabId, text }).catch(() => {});
-  chrome.action.setBadgeBackgroundColor({ tabId, color }).catch(() => {});
+  chrome.tabs.get(tabId).then(() => {
+    const text = status === "success" ? "OK" : "!";
+    const color = status === "success" ? "#4CAF50" : "#F44336";
+    chrome.action.setBadgeText({ tabId, text });
+    chrome.action.setBadgeBackgroundColor({ tabId, color });
+  }).catch(() => {
+    log("Tab", tabId, "not found. Skipping badge update.");
+  });
 }

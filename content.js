@@ -7,22 +7,26 @@
   window.__autoCookieRejectorRan = true;
 
   const REJECT_TEXTS = [
-    "reject all",
     "reject",
-    "deny all",
+    "reject all",
     "deny",
-    "decline all",
+    "deny all",
     "decline",
+    "decline all",
     "do not accept",
     "only necessary",
     "strictly necessary",
     "essential only",
+    "do not sell",
+    "do not sell or share",
     "opt out"
   ];
 
   const MANAGE_TEXTS = [
     "your privacy choices",
     "privacy choices",
+    "customize",
+    "customise",
     "manage preferences",
     "manage cookies",
     "manage my cookies",
@@ -41,17 +45,15 @@
     "update preferences",
     "cookie settings",
     "privacy settings",
-    "customize settings",
-    "customize",
-    "customise",
-    "no, thanks",
+    "my settings",
     "do not sell or share my personal information",
-    "do not sell or share",
-    "do not sell",
     "purposes",
+    "customize settings",
+    "no, thanks",
+    "do not sell or share",
     "privacy center"
   ];
-  
+
   function getInteractiveElements() {
     const primary = Array.from(document.querySelectorAll(
       "button, a, input[type='button'], input[type='submit'], [role='button']"
@@ -158,10 +160,7 @@
       if (!text) continue;
 
       for (const keyword of keywords) {
-        // Only match if the keyword is the whole text or a significant part of it
-        const isMatch = text === keyword || (text.length < 20 && text.includes(keyword));
-        
-        if (isMatch) {
+        if (text.includes(keyword)) {
           if (mode === "click") {
             console.log("[AutoReject] Clicking:", text);                      
             if (await clickElement(button)) {
@@ -176,15 +175,13 @@
             }
           } else {
             console.log("[AutoReject] Found privacy choices entry:", text);
-            // We set the state but do NOT return true here if we want to keep 
-            // looking for a Reject button that might appear after clicking this.
+            document.documentElement.dataset.autoCookieRejectorState = "manual-choice";
+            document.documentElement.dataset.autoCookieRejectorMatch = text;
             if (await openManageFlow(button)) {
               document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
-              // Returning false here is the key: it tells startWatching to keep the 
-              // MutationObserver alive so it can find the "Reject" button inside the new menu.
-              return false; 
+              return true;
             }
-            return false;
+            return true;
           }
         }
       }
@@ -225,9 +222,8 @@
       return;
     }
 
-    // 2. Only look for Manage if we haven't already succeeded AND we haven't already opened the menu
-    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected" && 
-        document.documentElement.dataset.autoCookieRejectorState !== "opened-manual-choice") {
+    // 2. Only look for Manage if we haven't already succeeded
+    if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
         chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
          

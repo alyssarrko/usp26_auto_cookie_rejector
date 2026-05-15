@@ -32,7 +32,7 @@
     "manage my cookies",
     "manage privacy choices",
     "manage your privacy choices",
-    "manage consent preferences"
+    "manage consent preferences",
     "cookie preferences",
     "privacy preferences",
     "consent preferences",

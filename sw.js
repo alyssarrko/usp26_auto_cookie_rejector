@@ -110,7 +110,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // 1. Handle Status Updates (Direct update to stop Nike flickering)
   if (message.status) {
-    updateBadge(tabId, message.status);
+    chrome.action.getBadgeText({ tabId }).then(currentText => {
+      // PREVENT NIKE FLICKER: If badge is already OK, don't let a 'fail' status downgrade it
+      if (currentText === "OK" && message.status !== "success") {
+        return; 
+      }
+      updateBadge(tabId, message.status);
+    }).catch(() => {
+      updateBadge(tabId, message.status);
+    });
+
     // If it's just a status sync, we can respond immediately
     if (message.type === "update-status") {
       sendResponse({ ok: true });

@@ -177,12 +177,22 @@
             }
           } else {
             console.log("[AutoReject] Found privacy choices entry:", text);
+
+            // Handshake Fix: If we find 'Purposes', prioritize it to open the correct view
+            if (text === "purposes") {
+               console.log("[AutoReject] Targeted Handshake 'Purposes' tab");
+            }
+            
             document.documentElement.dataset.autoCookieRejectorState = "manual-choice";
             document.documentElement.dataset.autoCookieRejectorMatch = text;
             if (await openManageFlow(button)) {
               document.documentElement.dataset.autoCookieRejectorState = "opened-manual-choice";
-              // Disconnect logic moved to startWatching for better stability
-              return true;
+              
+              // IKEA/Adidas Fix: Stop the observer immediately upon opening the flow 
+              // to prevent the 'glitching' and multiple trigger attempts.
+              if (window.autoRejectObserver) {
+                window.autoRejectObserver.disconnect();
+                window.autoRejectObserver = null;
             }
             return true;
           }
@@ -228,11 +238,15 @@
     // 2. Only look for Manage if we haven't already succeeded
     if (document.documentElement.dataset.autoCookieRejectorState !== "rejected") {
       if (await clickMatchingButton(MANAGE_TEXTS, "manage")) {
-        chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
-
-        // IKEA/Adidas Stability: Only stop watching if the manual choice is confirmed open
-        if (document.documentElement.dataset.autoCookieRejectorState === "opened-manual-choice") {
+        // If we successfully opened a manage flow, we don't treat it as a 'fail' 
+        // for sites like IKEA where this is the intended final automated step.
+        if (document.documentElement.dataset.autoCookieRejectorState !== "opened-manual-choice") {
+          chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
+        } else {
+          // If it's opened, ensure the badge stays red '!' but don't trigger the toast later
+          chrome.runtime.sendMessage({ type: "update-status", status: "fail" });
           stopEverything();
+          return; 
         }
          
         // We only show the "Manual Action" toast if the Reject button 
